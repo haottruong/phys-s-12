@@ -1,7 +1,7 @@
 var config = {
-  student_name: "YOUR NAME", // ie. John Doe
-  student_year_sem: "YOUR YEAR AND SEMESTER", // ie. Fall 2025
-  student_email: "YOUR EMAIL", // ie. jdoe@college.harvard.edu
+  student_name: "Hao Truong", // ie. John Doe
+  student_year_sem: "Summer 202", // ie. Fall 2025
+  student_email: "26truonghao@gmail.com", // ie. jdoe@college.harvard.edu
 
   background_color: "#181818",
   text_color: "#dedede",
