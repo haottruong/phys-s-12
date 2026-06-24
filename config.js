@@ -3,8 +3,8 @@ var config = {
   student_year_sem: "Summer 202", // ie. Fall 2025
   student_email: "26truonghao@gmail.com", // ie. jdoe@college.harvard.edu
 
-  background_color: "#FFFFFF",
-  text_color: "#1b1f17",
+  background_color: "#fafaf6",
+  text_color: "#555b29",
   accent_color: "#FFFFFF",
 
   // Make sure to add the @import from Google Fonts to style.css, ask if you need help!
