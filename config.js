@@ -12,7 +12,7 @@ var config = {
   code_font_family: "Roboto Mono"
 };
 
-document.title = `${config.student_name}'s PHYS-S12`;
+document.title = `${config.student_name}'s PHYS S-12`;
 
 document.documentElement.style.setProperty(
   "--background-color",

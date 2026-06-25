@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
 
+
 :root {
   --secondary-background-color: color-mix(in srgb, var(--text-color) 8%, var(--background-color) 92%);
   --accent-color: #FFFFFF;
@@ -28,11 +29,13 @@ h1, h2, h3, p, b, ul, ol, pre, table {
 }
 
 h1 {
+  font-family: Helvetica;
   font-size: clamp(3rem, 4.5vw, 100rem);
-  font-weight: 900;
+  font-weight: 400;
 }
 
 h2 {
+  font-family: Helvetica;
   font-size: clamp(2rem, 3vw, 100rem);
   font-weight: 600;
   font-style: italic;
@@ -40,23 +43,27 @@ h2 {
 }
 
 h3 {
+  font-family: Helvetica;
   font-size: clamp(1.5rem, 2.5vw, 100rem);
   font-weight: 400;
   margin-bottom: 0.5rem;
 }
 
 p {
+  font-family: Helvetica;
   font-size: clamp(1.2rem, 1.2vw, 100rem);
-  font-weight: 400;
+  font-weight: 200;
 }
 
 b {
   font-size: clamp(1.2rem, 1.2vw, 100rem);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 a {
+  font-family: 'Courier New', Courier, monospace;
   text-decoration: underline;
+  font-weight: 200;
   color: var(--text-color);
 }
 
@@ -214,8 +221,8 @@ nav {
 
 nav a {
   font-size: clamp(1rem, 1.5vw, 100rem);
-  font-weight: 900;
-  font-style: italic;
+  font-weight: 500;
+  font-style: normal;
   text-decoration: none;
 }
 
@@ -242,7 +249,7 @@ footer #contact-info {
 
 footer a {
   font-size: clamp(1rem, 1.5vw, 100rem);
-  font-weight: 400;
+  font-weight: 500;
   font-style: italic;
   text-decoration: none;
 }
@@ -279,7 +286,8 @@ footer a {
 }
 
 #work a {
-  font-size: clamp(1.4rem, 2.2vw, 100rem);
+  font-size: 22px;
+  font-weight: 500;
 }
 
 /* About */
