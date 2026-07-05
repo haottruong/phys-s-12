@@ -3,8 +3,8 @@ var config = {
   student_year_sem: "Summer 2026", // ie. Fall 2025
   student_email: "26truonghao@gmail.com", // ie. jdoe@college.harvard.edu
 
-  background_color: "#fafaf6",
-  text_color: "#555b29",
+  background_color: "#2d2d21",
+  text_color: "#f0f3d9",
   accent_color: "#FFFFFF",
 
   // Make sure to add the @import from Google Fonts to style.css, ask if you need help!
@@ -36,9 +36,6 @@ document.documentElement.style.setProperty(
 );
 
 document.querySelector("footer").innerHTML = `
-  <a href="./index.html#final-project">Work</a>
-  <a href="./about.html">About</a>
-
   <div id="contact-info">
     <a href="mailto:${config.student_email}">${config.student_email}</a>
   </div>
