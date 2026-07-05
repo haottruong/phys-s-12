@@ -212,6 +212,7 @@ img:has(+ .caption) {
 /* Nav */
 
 nav {
+  position: relative;
   height: clamp(0rem, 20vw, 10rem);
   width: 100vw;
   padding: 0rem 7vw;
