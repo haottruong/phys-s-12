@@ -65,16 +65,23 @@ b {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     justify-items: center;
-    gap: 10px;                
+    gap: 12px;                
     align-items: center;
+    margin-right: auto;
+
 }
 
 .button {
+  background-size: cover;
+  background-position: center;
+  background-repeat: repeat;
   background-color: rgb(55, 54, 47);
-  border: none;
-  width: 200px;
-  height: 150px; 
   color: rgb(234, 233, 230);
+  background-blend-mode: overlay;
+  border-radius: 15px;
+  border: none;
+  width: 300px;
+  height: 180px; 
   padding: 10px 20px;
   text-align: center;
   text-decoration: none;
@@ -83,6 +90,57 @@ b {
   font-style: italic;
   font-size: 15px;
   cursor: pointer;
+  transition-duration: 0.1s;
+  
+}
+.button:hover {
+  background-color: rgb(77, 77, 70);
+  background-blend-mode: overlay;
+  color: rgb(255, 255, 255);
+}
+
+.week1 {
+    background-image: url("./placeholder_assets/selforganizingshelf.png");
+}
+
+.week2 {
+    background-image: url("./placeholder_assets/Glass_2.png");
+}
+
+.week3 {
+    background-image: url("./placeholder_assets/video_moving.mov");
+}
+
+.week4 {
+    background-image: url("./placeholder_assets/");
+}
+
+.week5 {
+    background-image: url("./placeholder_assets/");
+}
+
+.week6 {
+    background-image: url("./placeholder_assets/");
+}
+
+.week7 {
+    background-image: url("./placeholder_assets/");
+}
+
+.week8 {
+    background-image: url("./placeholder_assets/");
+}
+
+.week9 {
+    background-image: url("./placeholder_assets/");
+}
+
+.week10 {
+    background-image: url("./placeholder_assets/");
+}
+
+.week11 {
+    background-image: url("./placeholder_assets/");
 }
 
 a {
