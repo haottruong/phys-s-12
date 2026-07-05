@@ -22,6 +22,7 @@ html {
   box-sizing: border-box;
 }
 
+
 /* TEXT */
 
 h1, h2, h3, p, b, ul, ol, pre, table {
@@ -58,6 +59,30 @@ p {
 b {
   font-size: clamp(1.2rem, 1.2vw, 100rem);
   font-weight: 600;
+}
+
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    justify-items: center;
+    gap: 10px;                
+    align-items: center;
+}
+
+.button {
+  background-color: rgb(55, 54, 47);
+  border: none;
+  width: 200px;
+  height: 150px; 
+  color: rgb(234, 233, 230);
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-family: 'Courier New';
+  font-style: italic;
+  font-size: 15px;
+  cursor: pointer;
 }
 
 a {
