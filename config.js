@@ -3,7 +3,7 @@ var config = {
   student_year_sem: "Summer 2026", // ie. Fall 2025
   student_email: "26truonghao@gmail.com", // ie. jdoe@college.harvard.edu
 
-  background_color: "#28261b",
+  background_color: "#262715",
   text_color: "#ede8d5",
   accent_color: "#FFFFFF",
 
