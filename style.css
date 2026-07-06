@@ -324,6 +324,7 @@ nav {
 
 nav a {
   font-size: clamp(1rem, 1.5vw, 100rem);
+  font-size:medium;
   font-weight: 600;
   font-style: normal;
   text-decoration: none;
@@ -354,6 +355,7 @@ footer #contact-info {
 footer a {
   font-size: clamp(1rem, 1.5vw, 100rem);
   font-weight: 600;
+  font-size: medium;
   font-style: italic;
   text-decoration: none;
 }
