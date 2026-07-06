@@ -90,7 +90,7 @@ b {
   font-style: italic;
   font-size: 15px;
   cursor: pointer;
-  transition-duration: 0.1s;
+  transition-duration: 0.3s;
   
 }
 .button:hover {
@@ -98,6 +98,22 @@ b {
   background-blend-mode: overlay;
   color: rgb(255, 255, 255);
 }
+
+.homebutton {
+  width: 180px;
+  height: 90px;
+  background-color: transparent;
+  background-image: url("./placeholder_assets/haotruong.png");
+  border-radius: 50%;
+
+}
+  .homebutton:hover {
+background-color: rgb(180, 138, 95);
+  background-blend-mode:color-dodge;
+  color: rgb(255, 255, 255);
+  transition-duration: 0.3s;
+  }
+
 
 .week1 {
     background-image: url("./placeholder_assets/selforganizingshelf.png");
