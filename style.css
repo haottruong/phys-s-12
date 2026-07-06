@@ -63,11 +63,12 @@ b {
 
 .button-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 2fr);
+    justify-content: center;
     justify-items: center;
-    gap: 12px;                
     align-items: center;
-    margin-right: auto;
+    margin: auto;
+    gap: 15px;                
 
 }
 
@@ -80,8 +81,8 @@ b {
   background-blend-mode: overlay;
   border-radius: 15px;
   border: none;
-  width: 300px;
-  height: 180px; 
+  width: 400px;
+  height: 280px; 
   padding: 10px 20px;
   text-align: center;
   text-decoration: none;
@@ -97,6 +98,11 @@ b {
   background-color: rgb(77, 77, 70);
   background-blend-mode: overlay;
   color: rgb(255, 255, 255);
+  outline-color: rgb(212, 202, 188);
+  outline-style: solid;
+  outline-offset: 0.5px;
+  outline-width: 2px;
+  
 }
 
 .homebutton {
@@ -112,6 +118,7 @@ background-color: rgb(180, 138, 95);
   background-blend-mode:color-dodge;
   color: rgb(255, 255, 255);
   transition-duration: 0.3s;
+  outline-style: none;
   }
 
 
