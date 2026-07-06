@@ -107,7 +107,7 @@ b {
   border-radius: 50%;
 
 }
-  .homebutton:hover {
+.homebutton:hover {
 background-color: rgb(180, 138, 95);
   background-blend-mode:color-dodge;
   color: rgb(255, 255, 255);
@@ -301,6 +301,7 @@ img:has(+ .caption) {
 /* Blog */
 
 .blog {
+  padding-top: clamp(0rem, 20vw, 8rem);
   width: clamp(0rem, 85vw, 60rem);
   display: flex;
   flex-direction: column;
@@ -311,8 +312,8 @@ img:has(+ .caption) {
 /* Nav */
 
 nav {
-  position: relative;
-  height: clamp(0rem, 20vw, 10rem);
+  position:fixed;
+  height: clamp(0rem, 20vw, 8rem);
   width: 100vw;
   padding: 0rem 7vw;
   gap: 3rem;
@@ -326,6 +327,7 @@ nav a {
   font-weight: 600;
   font-style: normal;
   text-decoration: none;
+
 }
 
 nav #home {
@@ -395,6 +397,7 @@ footer a {
 /* About */
 
 .about {
+  padding-top: clamp(0rem, 20vw, 8rem);
   width: clamp(0rem, 85vw, 60rem);
   display: grid;
   grid-template-columns: auto 1fr; 
