@@ -68,13 +68,30 @@ b {
 
 .button-grid {
     display: grid;
-    grid-template-columns: repeat(4, 2fr);
+    grid-template-columns: repeat(4, 1fr);
     justify-content: center;
     justify-items: center;
     align-items: center;
     margin: auto;
-    gap: 15px;                
+    gap: 15px;
+}
 
+@media (max-width: 1100px) {
+    .button-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 800px) {
+    .button-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 500px) {
+    .button-grid {
+      grid-template-columns: repeat(1, 1fr);
+    }
 }
 
 .button {
@@ -86,7 +103,7 @@ b {
   background-blend-mode: overlay;
   border-radius: 15px;
   border: none;
-  width: 300px;
+  Width: 300px;
   height: 200px; 
   padding: 10px 20px;
   text-align: center;
@@ -144,7 +161,7 @@ background-color: rgb(180, 138, 95);
 }
 
 .week5 {
-    background-image: url("./placeholder_assets/resinprinterror.png");
+    background-image: url("./placeholder_assets/3dprintvsresinprint.png");
 }
 
 .week6 {
