@@ -57,7 +57,7 @@ h3 {
 
 p {
   font-family: Helvetica;
-  font-size: clamp(1.2rem, 1.2vw, 100rem);
+  font-size: clamp(1.3rem, 1.2vw, 100rem);
   font-weight: 200;
 }
 
@@ -111,7 +111,7 @@ b {
   display: inline-block;
   font-family: 'Courier New';
   font-style: italic;
-  font-size: 15px;
+  font-size: 18px;
   cursor: pointer;
   transition-duration: 0.3s;
   
@@ -354,7 +354,7 @@ nav {
 
 nav a {
   font-size: clamp(1rem, 1.5vw, 100rem);
-  font-size:medium;
+  font-size:large;
   font-weight: 600;
   font-style: normal;
   text-decoration: none;
