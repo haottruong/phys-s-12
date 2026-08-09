@@ -1,0 +1,508 @@
+<link rel="stylesheet" href="../style.css">
+
+<pre><code>// FHYS S12 FP Interactive LED Installation
+
+#include "esp_camera.h"
+#include "esp_http_server.h"
+#include <Adafruit_NeoPixel.h>
+#include <WiFi.h>
+
+const char* WIFI_SSID     = "MAKERSPACE";
+const char* WIFI_PASSWORD = "12345678";
+
+#define LED_PIN              D0
+#define COLS                 6
+#define ROWS                 10
+#define NUM_LEDS             (COLS * ROWS)
+
+uint8_t ledBrightness       = 30;
+bool    mirrorHorizontal     = true;
+bool    invertImage          = false;
+float   smoothFactor         = 0.7;
+float   gammaVal             = 0.6;
+
+#define PWDN_GPIO   -1
+#define RESET_GPIO  -1
+#define XCLK_GPIO   10
+#define SIOD_GPIO   40
+#define SIOC_GPIO   39
+#define Y9_GPIO     48
+#define Y8_GPIO     11
+#define Y7_GPIO     12
+#define Y6_GPIO     14
+#define Y5_GPIO     16
+#define Y4_GPIO     18
+#define Y3_GPIO     17
+#define Y2_GPIO     15
+#define VSYNC_GPIO  38
+#define HREF_GPIO   47
+#define PCLK_GPIO   13
+
+Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
+httpd_handle_t web_httpd = NULL;
+
+float   smoothGrid[ROWS][COLS];
+uint8_t gridState[ROWS][COLS];
+int     currentFPS = 0;
+
+// colors
+
+typedef struct {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+} RGBColor;
+
+const int NUM_STOPS = 11;
+const uint8_t stopPos[NUM_STOPS] = {0, 20, 55, 80, 110, 140, 165, 190, 215, 238, 255};
+const RGBColor stopCol[NUM_STOPS] = {
+  {0,   0,   0},
+  {30,  0,   50},
+  {60,  20,  160},
+  {20,  60,  220},
+  {0,   180, 200},
+  {0,   200, 80},
+  {180, 210, 0},
+  {255, 180, 0},
+  {255, 60,  40},
+  {255, 120, 180},
+  {255, 255, 255}
+};
+
+void mapToColor(uint8_t val, uint8_t *r, uint8_t *g, uint8_t *b) {
+  for (int i = 0; i < NUM_STOPS - 1; i++) {
+    if (val <= stopPos[i + 1]) {
+      float t = (float)(val - stopPos[i]) / (float)(stopPos[i + 1] - stopPos[i]);
+      *r = (uint8_t)(stopCol[i].r + t * ((float)stopCol[i+1].r - stopCol[i].r));
+      *g = (uint8_t)(stopCol[i].g + t * ((float)stopCol[i+1].g - stopCol[i].g));
+      *b = (uint8_t)(stopCol[i].b + t * ((float)stopCol[i+1].b - stopCol[i].b));
+      return;
+    }
+  }
+  *r = 255; *g = 255; *b = 255;
+}
+
+int xyToIndex(int x, int y) {
+  if (x % 2 == 0) return x * ROWS + (ROWS - 1 - y);
+  else             return x * ROWS + y;
+}
+
+//  camera s3 
+
+bool initCamera() {
+  camera_config_t config;
+  config.ledc_channel = LEDC_CHANNEL_0;
+  config.ledc_timer   = LEDC_TIMER_0;
+  config.pin_d0       = Y2_GPIO;
+  config.pin_d1       = Y3_GPIO;
+  config.pin_d2       = Y4_GPIO;
+  config.pin_d3       = Y5_GPIO;
+  config.pin_d4       = Y6_GPIO;
+  config.pin_d5       = Y7_GPIO;
+  config.pin_d6       = Y8_GPIO;
+  config.pin_d7       = Y9_GPIO;
+  config.pin_xclk     = XCLK_GPIO;
+  config.pin_pclk     = PCLK_GPIO;
+  config.pin_vsync    = VSYNC_GPIO;
+  config.pin_href     = HREF_GPIO;
+  config.pin_sccb_sda = SIOD_GPIO;
+  config.pin_sccb_scl = SIOC_GPIO;
+  config.pin_pwdn     = PWDN_GPIO;
+  config.pin_reset    = RESET_GPIO;
+  config.xclk_freq_hz = 20000000;
+  config.pixel_format = PIXFORMAT_GRAYSCALE;
+  config.frame_size   = FRAMESIZE_QQVGA;
+  config.fb_count     = 1;
+  config.grab_mode    = CAMERA_GRAB_WHEN_EMPTY;
+  config.fb_location  = CAMERA_FB_IN_PSRAM;
+
+  esp_err_t err = esp_camera_init(&config);
+  if (err != ESP_OK) {
+    config.fb_location = CAMERA_FB_IN_DRAM;
+    err = esp_camera_init(&config);
+  }
+  if (err != ESP_OK) return false;
+
+  sensor_t *s = esp_camera_sensor_get();
+  s->set_brightness(s, 0);
+  s->set_contrast(s, 2);
+  s->set_gainceiling(s, GAINCEILING_8X);
+  if (mirrorHorizontal) s->set_hmirror(s, 1);
+  return true;
+}
+
+// light display features
+
+void frameToLEDs() {
+  camera_fb_t *fb = esp_camera_fb_get();
+  if (!fb) return;
+
+  int blockW = fb->width  / COLS;
+  int blockH = fb->height / ROWS;
+  int total  = fb->width * fb->height;
+
+  uint8_t frameMin = 255, frameMax = 0;
+  for (int i = 0; i < total; i += 3) {
+    if (fb->buf[i] < frameMin) frameMin = fb->buf[i];
+    if (fb->buf[i] > frameMax) frameMax = fb->buf[i];
+  }
+
+  float range = (float)(frameMax - frameMin);
+  if (range < 10.0) range = 10.0;
+
+  for (int gy = 0; gy < ROWS; gy++) {
+    for (int gx = 0; gx < COLS; gx++) {
+      uint32_t sum = 0;
+      int sx = gx * blockW;
+      int sy = gy * blockH;
+      for (int py = sy; py < sy + blockH; py++)
+        for (int px = sx; px < sx + blockW; px++)
+          sum += fb->buf[py * fb->width + px];
+
+      uint8_t avg = sum / (blockW * blockH);
+
+      float normalized = (float)(avg - frameMin) / range;
+      if (normalized < 0.0) normalized = 0.0;
+      if (normalized > 1.0) normalized = 1.0;
+
+      float curved = pow(normalized, gammaVal);
+      float target = curved * 255.0;
+      if (invertImage) target = 255.0 - target;
+
+      smoothGrid[gy][gx] = smoothGrid[gy][gx] * smoothFactor + target * (1.0 - smoothFactor);
+
+      uint8_t val = (uint8_t)constrain((int)(smoothGrid[gy][gx] + 0.5), 0, 255);
+      gridState[gy][gx] = val;
+
+      uint8_t cr, cg, cb;
+      mapToColor(val, &cr, &cg, &cb);
+      strip.setPixelColor(xyToIndex(gx, gy), strip.Color(cr, cg, cb));
+    }
+  }
+
+  strip.show();
+  esp_camera_fb_return(fb);
+}
+
+// web construction
+
+const char HTML_PAGE[] = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hao's Interactive LED Display</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0a0a0a;color:#fff;
+  font-family:Helvetica,Arial,sans-serif;
+  font-size:11px;font-weight:400;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  min-height:100vh;padding:40px 20px;
+  letter-spacing:3px;text-transform:uppercase;
+}
+h1{font-size:11px;font-weight:400;letter-spacing:8px;margin-bottom:48px}
+.gw{position:relative}
+canvas{display:block}
+.gl{position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);letter-spacing:4px}
+.sec{margin-top:40px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.sec-l{color:#444;margin-bottom:2px}
+.br{display:flex;gap:1px}
+.bt{
+  font-family:Helvetica,Arial,sans-serif;
+  font-size:11px;font-weight:400;
+  letter-spacing:3px;text-transform:uppercase;
+  color:#333;background:#111;
+  border:1px solid #1a1a1a;
+  cursor:pointer;padding:10px 18px;transition:all .2s;
+}
+.bt:first-child{border-radius:4px 0 0 4px}
+.bt:last-child{border-radius:0 4px 4px 0}
+.bt:hover{color:#888;background:#151515}
+.bt.on{color:#fff;background:#1a1a1a;border-color:#333}
+.st{margin-top:48px;display:flex;gap:48px}
+.st span{display:flex;align-items:center;gap:6px}
+.dt{width:4px;height:4px;border-radius:50%;background:#444}
+.dt.on{background:#fff;animation:p 2s infinite}
+@keyframes p{0%,100%{opacity:.3}50%{opacity:1}}
+</style>
+</head>
+<body>
+<h1>Hao's Interactive LED Display</h1>
+<div class="gw">
+  <canvas id="c" width="280" height="280"></canvas>
+  <div class="gl">6 &times; 10</div>
+</div>
+<div class="sec">
+  <div class="sec-l">BRIGHTNESS</div>
+  <div class="br">
+    <button class="bt" onclick="sv('brightness',15)" id="b1">LOW</button>
+    <button class="bt on" onclick="sv('brightness',30)" id="b2">MED</button>
+    <button class="bt" onclick="sv('brightness',50)" id="b3">HIGH</button>
+  </div>
+</div>
+<div class="sec">
+  <div class="sec-l">CONTRAST</div>
+  <div class="br">
+    <button class="bt" onclick="sv('gamma',90)" id="g1">LOW</button>
+    <button class="bt on" onclick="sv('gamma',60)" id="g2">MED</button>
+    <button class="bt" onclick="sv('gamma',35)" id="g3">HIGH</button>
+  </div>
+</div>
+<div class="sec">
+  <div class="sec-l">SMOOTHING</div>
+  <div class="br">
+    <button class="bt" onclick="sv('smooth',0)" id="s1">NONE</button>
+    <button class="bt" onclick="sv('smooth',50)" id="s2">SOFT</button>
+    <button class="bt on" onclick="sv('smooth',70)" id="s3">HEAVY</button>
+  </div>
+</div>
+<div class="sec">
+  <div class="br">
+    <button class="bt" id="bI" onclick="tog('invert')">INVERT</button>
+    <button class="bt on" id="bM" onclick="tog('mirror')">MIRROR</button>
+  </div>
+</div>
+<div class="st">
+  <span><span class="dt" id="dot"></span><span id="stt">--</span></span>
+  <span>FPS <span id="fps">--</span></span>
+  <span>ACTIVE <span id="cnt">--</span></span>
+</div>
+<script>
+const C=6,R=10,cv=document.getElementById('c'),cx=cv.getContext('2d'),S=cv.width;
+const pad=24,gW=S-pad*2,gH=S-pad*2,cW=gW/C,cH=gH/R,dr=Math.min(cW,cH)*0.30;
+const stops=[
+  {p:0,r:0,g:0,b:0},
+  {p:20,r:30,g:0,b:50},
+  {p:55,r:60,g:20,b:160},
+  {p:80,r:20,g:60,b:220},
+  {p:110,r:0,g:180,b:200},
+  {p:140,r:0,g:200,b:80},
+  {p:165,r:180,g:210,b:0},
+  {p:190,r:255,g:180,b:0},
+  {p:215,r:255,g:60,b:40},
+  {p:238,r:255,g:120,b:180},
+  {p:255,r:255,g:255,b:255}
+];
+function toRGB(v){
+  for(let i=0;i<stops.length-1;i++){
+    if(v<=stops[i+1].p){
+      const t=(v-stops[i].p)/(stops[i+1].p-stops[i].p);
+      return{r:Math.round(stops[i].r+t*(stops[i+1].r-stops[i].r)),
+             g:Math.round(stops[i].g+t*(stops[i+1].g-stops[i].g)),
+             b:Math.round(stops[i].b+t*(stops[i+1].b-stops[i].b))};
+    }
+  }
+  return{r:255,g:255,b:255};
+}
+let disp=new Float32Array(C*R);
+let targ=new Float32Array(C*R);
+function render(){
+  cx.fillStyle='#0a0a0a';cx.fillRect(0,0,S,S);
+  let n=0;
+  for(let y=0;y<R;y++){
+    for(let x=0;x<C;x++){
+      const i=y*C+x;
+      disp[i]+=(targ[i]-disp[i])*0.12;
+      const v=disp[i];
+      const c=toRGB(v);
+      if(v>15)n++;
+      const px=pad+x*cW+cW/2;
+      const py=pad+y*cH+cH/2;
+      const b=v/255;
+      if(b>0.04){
+        cx.beginPath();cx.arc(px,py,dr+8,0,6.3);
+        cx.fillStyle='rgba('+c.r+','+c.g+','+c.b+','+(b*0.1)+')';cx.fill();
+        cx.beginPath();cx.arc(px,py,dr+4,0,6.3);
+        cx.fillStyle='rgba('+c.r+','+c.g+','+c.b+','+(b*0.15)+')';cx.fill();
+      }
+      cx.beginPath();cx.arc(px,py,dr,0,6.3);
+      cx.fillStyle='rgb('+c.r+','+c.g+','+c.b+')';cx.fill();
+      if(b<0.08){cx.strokeStyle='#181818';cx.lineWidth=0.5;cx.stroke()}
+    }
+  }
+  document.getElementById('cnt').textContent=n+'/60';
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+async function poll(){
+  try{
+    const r=await fetch('/grid');const d=await r.json();
+    for(let i=0;i<C*R;i++) targ[i]=d.g[i];
+    document.getElementById('fps').textContent=d.f;
+    document.getElementById('dot').className='dt on';
+    document.getElementById('stt').textContent='CONNECTED';
+  }catch(e){
+    document.getElementById('dot').className='dt';
+    document.getElementById('stt').textContent='OFFLINE';
+  }
+}
+setInterval(poll,100);
+async function tog(n){
+  const r=await fetch('/set?n='+n+'&t=1');const d=await r.json();
+  document.getElementById('bI').className='bt'+(d.i?' on':'');
+  document.getElementById('bM').className='bt'+(d.m?' on':'');
+}
+function sv(n,v){
+  fetch('/set?n='+n+'&v='+v);
+  if(n==='brightness'){
+    document.getElementById('b1').className='bt'+(v==15?' on':'');
+    document.getElementById('b2').className='bt'+(v==30?' on':'');
+    document.getElementById('b3').className='bt'+(v==50?' on':'');
+  }
+  if(n==='gamma'){
+    document.getElementById('g1').className='bt'+(v==90?' on':'');
+    document.getElementById('g2').className='bt'+(v==60?' on':'');
+    document.getElementById('g3').className='bt'+(v==35?' on':'');
+  }
+  if(n==='smooth'){
+    document.getElementById('s1').className='bt'+(v==0?' on':'');
+    document.getElementById('s2').className='bt'+(v==50?' on':'');
+    document.getElementById('s3').className='bt'+(v==70?' on':'');
+  }
+}
+for(let i=0;i<C*R;i++){disp[i]=0;targ[i]=0;}
+</script>
+</body>
+</html>
+)rawliteral";
+
+//  HTTP 
+
+esp_err_t page_handler(httpd_req_t *req) {
+  httpd_resp_set_type(req, "text/html");
+  return httpd_resp_send(req, HTML_PAGE, strlen(HTML_PAGE));
+}
+
+esp_err_t grid_handler(httpd_req_t *req) {
+  char json[512];
+  int pos = 0;
+  pos += snprintf(json + pos, sizeof(json) - pos, "{\"f\":%d,\"g\":[", currentFPS);
+  for (int y = 0; y < ROWS; y++)
+    for (int x = 0; x < COLS; x++) {
+      pos += snprintf(json + pos, sizeof(json) - pos, "%d", gridState[y][x]);
+      if (y * COLS + x < NUM_LEDS - 1) json[pos++] = ',';
+    }
+  pos += snprintf(json + pos, sizeof(json) - pos, "]}");
+  httpd_resp_set_type(req, "application/json");
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+  return httpd_resp_send(req, json, pos);
+}
+
+esp_err_t settings_handler(httpd_req_t *req) {
+  char buf[128];
+  size_t buf_len = httpd_req_get_url_query_len(req) + 1;
+  if (buf_len > 1 && buf_len <= sizeof(buf)) {
+    httpd_req_get_url_query_str(req, buf, buf_len);
+    char name[16], val[16];
+    bool isToggle = (httpd_query_key_value(buf, "t", val, sizeof(val)) == ESP_OK);
+    if (httpd_query_key_value(buf, "n", name, sizeof(name)) == ESP_OK) {
+      if (isToggle) {
+        if (strcmp(name, "invert") == 0) invertImage = !invertImage;
+        if (strcmp(name, "mirror") == 0) {
+          mirrorHorizontal = !mirrorHorizontal;
+          sensor_t *s = esp_camera_sensor_get();
+          s->set_hmirror(s, mirrorHorizontal ? 1 : 0);
+        }
+      }
+      if (httpd_query_key_value(buf, "v", val, sizeof(val)) == ESP_OK) {
+        int v = atoi(val);
+        if (strcmp(name, "brightness") == 0) {
+          ledBrightness = constrain(v, 5, 60);
+          strip.setBrightness(ledBrightness);
+        }
+        if (strcmp(name, "smooth") == 0)
+          smoothFactor = constrain(v, 0, 90) / 100.0;
+        if (strcmp(name, "gamma") == 0)
+          gammaVal = constrain(v, 10, 100) / 100.0;
+      }
+    }
+  }
+  char json[64];
+  snprintf(json, sizeof(json), "{\"i\":%s,\"m\":%s}",
+    invertImage ? "true" : "false",
+    mirrorHorizontal ? "true" : "false");
+  httpd_resp_set_type(req, "application/json");
+  return httpd_resp_send(req, json, strlen(json));
+}
+
+void startWebServer() {
+  httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+  config.server_port = 80;
+  config.max_uri_handlers = 4;
+  if (httpd_start(&web_httpd, &config) == ESP_OK) {
+    httpd_uri_t u1 = {.uri="/",     .method=HTTP_GET, .handler=page_handler};
+    httpd_uri_t u2 = {.uri="/grid", .method=HTTP_GET, .handler=grid_handler};
+    httpd_uri_t u3 = {.uri="/set",  .method=HTTP_GET, .handler=settings_handler};
+    httpd_register_uri_handler(web_httpd, &u1);
+    httpd_register_uri_handler(web_httpd, &u2);
+    httpd_register_uri_handler(web_httpd, &u3);
+  }
+  Serial.printf("Dashboard: http://%s\n", WiFi.localIP().toString().c_str());
+}
+
+void connectWiFi() {
+  Serial.printf("Connecting to: %s", WIFI_SSID);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
+  int a = 0;
+  while (WiFi.status() != WL_CONNECTED && a < 40) { delay(500); Serial.print("."); a++; }
+  if (WiFi.status() == WL_CONNECTED)
+    Serial.printf("\nConnected: http://%s\n", WiFi.localIP().toString().c_str());
+  else
+    Serial.println("\nWiFi failed. LEDs work offline.");
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("\n=== LED Mirror 6x10 ===");
+
+  for (int y = 0; y < ROWS; y++)
+    for (int x = 0; x < COLS; x++)
+      smoothGrid[y][x] = 0.0;
+
+  strip.begin();
+  strip.setBrightness(ledBrightness);
+  strip.clear(); strip.show();
+
+  for (int x = 0; x < COLS; x++) {
+    for (int y = 0; y < ROWS; y++)
+      strip.setPixelColor(xyToIndex(x, y), strip.Color(255, 255, 255));
+    strip.show(); delay(80);
+    for (int y = 0; y < ROWS; y++)
+      strip.setPixelColor(xyToIndex(x, y), 0);
+  }
+  strip.clear(); strip.show();
+
+  if (!initCamera()) {
+    Serial.println("CAMERA FAILED");
+    for (int i = 0; i < NUM_LEDS; i++)
+      strip.setPixelColor(i, strip.Color(255, 0, 0));
+    strip.show();
+    while (true) delay(1000);
+  }
+
+  connectWiFi();
+  if (WiFi.status() == WL_CONNECTED) startWebServer();
+  Serial.println("Display online");
+}
+
+void loop() {
+  unsigned long start = millis();
+  frameToLEDs();
+  unsigned long elapsed = millis() - start;
+  currentFPS = elapsed > 0 ? 1000 / (int)elapsed : 0;
+
+  static unsigned long lp = 0;
+  if (millis() - lp > 3000) {
+    Serial.printf("%lums (~%dfps) | http://%s\n",
+      elapsed, currentFPS, WiFi.localIP().toString().c_str());
+    lp = millis();
+  }
+}
+
+</code></pre>

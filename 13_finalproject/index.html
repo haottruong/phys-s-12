@@ -16,12 +16,49 @@
 
   <body>
     <section class="blog">
-      <h1>Final Project</h1>
-      <b>Before you start making your website, be sure to check out <a href="../README.html">README.html</a>!!!</b>
+       <h1 style="text-align: center;">Final Project</h1>
+            <h2 style="font-style: normal; text-align: center;">Interactive Abstract Art Installation</h2>
+ <p>
+For my final project, I decided to combine the concepts I learned from the whole course such as CAD design, electricity, and sensors to create a abstract art piece. 
+I was inspired by interactive and live art that is able to move dynamically and allow the audience to have a diverse perspective on how they view it. Based on this idea, I thought of making a LED display, similar to how screens work, have an RGB image of what the sensor or camera is capturing live.
+The final product was a 10x8 LED screen that is connected to a Xiao ESP32S3 Camera where captures display in real time as the input and feeds into the LED display by summarizing both pixels and colors through my program and outputs the changes on the screen.</p>
+      
+      <h2 style="font-size: 28px;">Contruction Documentation</h2>
 
-      <p>
-        This is where you'll document your final project. Be sure to include a video demonstrating your project and a bill of materials. Good documentation should explain your entire build process such that someone reading your documentation could recreate your entire project from scratch. See the PS70 website for examples.
-      </p>
+
+         <video controls>
+        <source src="./Assets/firstiteration.mov" type="video/mp4">
+      </video>
+              <p>This video captures an early protoype of my product. The camera takes in distance and large movements and displays it with only solid white light on the LED. 
+                For this prototype, I could have also used an ultrasonic sensor because it could also use distance as the main input however I believe the camera worked better because it had more complexity and worked a lot smoohter from my experience. 
+              Additionally, the camera allowed for more customizability potential which can seen reflected in the final proudct.</p>
+
+      <img src="./Assets/camera-settings.jpg" alt="">
+      <p class="caption">Camera setting variations</p>
+
+          <h2 style="font-size: 28px;">Final Working Product</h2>
+          <img src="./Assets/websitelight1.png" alt="">
+          <p class="caption">A screenshot of my website UI for adjusting and personalizing the light display. It includes the option to change brightness, contrast, smoothness, and live data on the LEDs.</p>
+            <img src="./Assets/lightproductdisplay.jpg" alt="">
+            <p class="caption">Product Presentation</p>
+   <video controls>
+        <source src="./Assets/shortproductdemo.mov" type="video/mp4">
+      </video>
+                <p class="caption">Short Demonstration</p>
+
+            <p style="text-align: center;"><a href="./rawcode.html" target="_blank">View Code</a>
+     
+      
+              <h2 style="font-size: 28px;">Future Plans</h2>
+        
+        <img src="./Assets/aiimageofproduct.png" alt="">
+            <p class="caption">Product in Museum (Image credits: ChatGPT)</p>
+
+        <p>Moving forward, I plan to enclose the light display into a 3D Canvas and clean up the wiring. 
+          I also plan to adjust the code in order for the camera to be more sensitive to movement inputs and able to more accuratly capture the live image onto the display.
+        I can enclose the display by adding the sides plates to hide the wiring and possibly make a 3D printed case for the small camera to attach to the top of the case. 
+        </p>
+
       
     </section>
   </body>
